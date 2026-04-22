@@ -40,7 +40,7 @@ async function generate() {
         }
       }
     } catch (err) {
-      console.error('Falha ao chamar o servidor local:', err && err.message);
+      console.error('Falha ao chamar o servidor local:', err?.message);
     }
   }
 

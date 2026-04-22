@@ -1,0 +1,8 @@
+name = "show-do-miau"
+compatibility_date = "2026-04-22"
+workers_dev = true
+type = "javascript"
+
+[vars]
+GENERATIVE_API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent"
+GENERATIVE_SERVER_URL = "https://seu-backend-em-producao.example.com"
