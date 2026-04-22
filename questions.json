@@ -1,0 +1,158 @@
+[
+  {
+    "id": 1,
+    "question": "Qual é a capital do Brasil?",
+    "choices": [
+      "Brasília",
+      "Rio de Janeiro",
+      "São Paulo",
+      "Salvador"
+    ],
+    "answerIndex": 0,
+    "theme": "Geografia",
+    "explanation": "Brasília é a capital federal do Brasil desde 1960, quando foi construída para ser a nova capital."
+  },
+  {
+    "id": 2,
+    "question": "Qual é o maior planeta do Sistema Solar?",
+    "choices": [
+      "Júpiter",
+      "Saturno",
+      "Terra",
+      "Marte"
+    ],
+    "answerIndex": 0,
+    "theme": "Ciências",
+    "explanation": "Júpiter é o maior planeta do Sistema Solar, com muito mais massa e diâmetro que os demais."
+  },
+  {
+    "id": 3,
+    "question": "Em que continente fica o Egito?",
+    "choices": [
+      "África",
+      "Ásia",
+      "Europa",
+      "América do Sul"
+    ],
+    "answerIndex": 0,
+    "theme": "Geografia",
+    "explanation": "O Egito está no nordeste da África; apenas a península do Sinai fica na Ásia."
+  },
+  {
+    "id": 4,
+    "question": "Qual elemento químico tem símbolo 'O'?",
+    "choices": [
+      "Oxigênio",
+      "Ouro",
+      "Prata",
+      "Hélio"
+    ],
+    "answerIndex": 0,
+    "theme": "Ciências",
+    "explanation": "O símbolo 'O' representa o elemento oxigênio na tabela periódica."
+  },
+  {
+    "id": 5,
+    "question": "Qual a cor resultante da mistura de azul e amarelo?",
+    "choices": [
+      "Verde",
+      "Roxo",
+      "Laranja",
+      "Marrom"
+    ],
+    "answerIndex": 0,
+    "theme": "Ciências",
+    "explanation": "Misturando pigmentos, azul e amarelo formam verde."
+  },
+  {
+    "id": 6,
+    "question": "Quanto é 7 × 8?",
+    "choices": [
+      "54",
+      "56",
+      "58",
+      "64"
+    ],
+    "answerIndex": 1,
+    "theme": "Matemática",
+    "explanation": "7 × 8 = 56 (7 somado a si mesmo 8 vezes)."
+  },
+  {
+    "id": 7,
+    "question": "Quem escreveu 'Dom Casmurro'?",
+    "choices": [
+      "Machado de Assis",
+      "Jorge Amado",
+      "Carlos Drummond de Andrade",
+      "Clarice Lispector"
+    ],
+    "answerIndex": 0,
+    "theme": "Literatura",
+    "explanation": "Machado de Assis, autor brasileiro do século XIX, escreveu 'Dom Casmurro'."
+  },
+  {
+    "id": 8,
+    "question": "Qual a moeda do Japão?",
+    "choices": [
+      "Yen",
+      "Won",
+      "Dólar",
+      "Euro"
+    ],
+    "answerIndex": 0,
+    "theme": "Geografia",
+    "explanation": "O yen (¥) é a moeda oficial do Japão."
+  },
+  {
+    "id": 9,
+    "question": "Qual é a velocidade aproximada do som no ar (m/s)?",
+    "choices": [
+      "340",
+      "150",
+      "1000",
+      "299792"
+    ],
+    "answerIndex": 0,
+    "theme": "Ciências",
+    "explanation": "A velocidade do som no ar, a cerca de 20°C, é aproximadamente 343 m/s; 340 m/s é uma aproximação comum."
+  },
+  {
+    "id": 10,
+    "question": "Que gás é mais abundante na atmosfera terrestre?",
+    "choices": [
+      "Nitrogênio",
+      "Oxigênio",
+      "Hélio",
+      "Dióxido de Carbono"
+    ],
+    "answerIndex": 0,
+    "theme": "Ciências",
+    "explanation": "A atmosfera terrestre é composta principalmente por nitrogênio (~78%), seguido por oxigênio."
+  },
+  {
+    "id": 11,
+    "question": "Qual órgão humano filtra o sangue e produz urina?",
+    "choices": [
+      "Rim",
+      "Fígado",
+      "Pulmão",
+      "Coração"
+    ],
+    "answerIndex": 0,
+    "theme": "Ciências",
+    "explanation": "Os rins filtram o sangue e produzem urina como parte do sistema urinário."
+  },
+  {
+    "id": 12,
+    "question": "Quantos segundos tem um minuto?",
+    "choices": [
+      "60",
+      "100",
+      "30",
+      "120"
+    ],
+    "answerIndex": 0,
+    "theme": "Matemática",
+    "explanation": "Um minuto tem 60 segundos por definição do sistema de tempo."
+  }
+]

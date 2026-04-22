@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Quiz IA</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <meta name="theme-color" content="#4f46e5">
+</head>
+
+<body>
+  <div class="app">
+    <header>
+      <h1>Quiz IA</h1>
+      <div class="score">Placar: <span id="score">0</span></div>
+    </header>
+    <main id="game">
+      <div id="intro" class="screen">
+        <p>Responda 10 perguntas. Toque em um tema para iniciar:</p>
+        <div class="settings">
+          <div class="theme-cards">
+            <button class="theme-card" data-theme="Misturado">Misturado</button>
+            <button class="theme-card" data-theme="Ciências">Ciências</button>
+            <button class="theme-card" data-theme="História">História</button>
+            <button class="theme-card" data-theme="Geografia">Geografia</button>
+            <button class="theme-card" data-theme="Matemática">Matemática</button>
+            <button class="theme-card" data-theme="Literatura">Literatura</button>
+          </div>
+          <small class="setting-hint">Toque em um tema para iniciar automaticamente.</small>
+        </div>
+      </div>
+
+      <div id="questionScreen" class="screen hidden">
+        <div class="status">
+          <div class="progress-left"><span id="progressText">0/0</span></div>
+          <div class="progress-bar" aria-hidden="true">
+            <div id="progressFill" class="progress-fill" style="width:0%"></div>
+          </div>
+        </div>
+        <div id="question" class="question">Pergunta carregando…</div>
+        <div id="choices" class="choices"></div>
+        <div id="explanation" class="explanation hidden"></div>
+        <div class="actions">
+          <button id="nextBtn" class="btn" disabled>Próxima</button>
+        </div>
+      </div>
+
+      <div id="finalScreen" class="screen hidden">
+        <h2>Fim de jogo</h2>
+        <p>Sua pontuação: <span id="finalScore">0</span></p>
+        <p>Melhor pontuação: <span id="highScore">0</span></p>
+        <button id="restartBtn" class="btn primary">Jogar novamente</button>
+      </div>
+    </main>
+    <footer>
+      <small>&copy; 2026 Quiz IA</small>
+    </footer>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+
+</html>

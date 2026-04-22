@@ -1,0 +1,44 @@
+# Dependências
+node_modules/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build / produção
+dist/
+build/
+.next/
+out/
+
+# Arquivos de ambiente
+.env
+.env.*
+!.env.example
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# IDE / editores
+.vscode/
+.idea/
+
+# Arquivos temporários
+tmp/
+temp/
+
+# Cache
+.cache/
+.npm/
+.eslintcache
+
+# Testes
+coverage/
+
+# Arquivos específicos (opcional)
+*.tgz
