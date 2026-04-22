@@ -1,6 +1,10 @@
 const QUESTIONS_URL = './questions.json';
 const NUM_QUESTIONS = 10;
-const SERVER_BASE = 'http://localhost:3000';
+// Runtime-configurable server base. Create a `config.js` that sets:
+// window.SHOWDO_CONFIG = { serverBase: 'https://seu-backend.example.com' }
+const DEFAULT_LOCAL_SERVER = 'http://localhost:3000';
+const SERVER_BASE = (window.SHOWDO_CONFIG && window.SHOWDO_CONFIG.serverBase)
+  || ((location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? DEFAULT_LOCAL_SERVER : '');
 
 const AUTO_ADVANCE_DELAY = 15000;
 const AUTO_ADVANCE_ENABLED = true;
