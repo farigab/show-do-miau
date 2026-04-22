@@ -26,12 +26,22 @@ const extractJSONFromText = (text) => {
 export default {
   async fetch(request, env) {
     const originHeader = request.headers.get('origin') || '';
-    const allowedOrigin = env.FRONTEND_ORIGIN || '*';
+    const configuredFrontend = (env.FRONTEND_ORIGIN || '*').replace(/\"/g, '');
+    // Decide which Origin to allow: prefer the request's Origin when it matches
+    // the configured frontend or when configured as '*'.
+    let originToAllow = configuredFrontend;
+    if (originHeader) {
+      if (configuredFrontend === '*' || configuredFrontend === originHeader) {
+        originToAllow = originHeader;
+      }
+    }
     const corsHeaders = {
-      'Access-Control-Allow-Origin': allowedOrigin === '*' ? '*' : allowedOrigin,
+      'Access-Control-Allow-Origin': originToAllow,
       'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
+      'Vary': 'Origin'
     };
+    if (originToAllow !== '*') corsHeaders['Access-Control-Allow-Credentials'] = 'true';
 
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: corsHeaders });
