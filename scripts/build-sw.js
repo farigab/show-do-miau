@@ -32,7 +32,7 @@ async function build() {
       console.warn('Não foi possível ler config.js, usando defaults:', err?.message);
     }
 
-    const swSrc = path.join(process.cwd(), 'service-worker.js'); // your custom SW template
+    const swSrc = path.join(process.cwd(), 'sw-template.js'); // your custom SW template
     const swDest = path.join(publicDir, swDestFilename);
 
     // FIX: injectManifest reads `swSrc`, injects the precache manifest, and
