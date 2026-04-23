@@ -130,6 +130,20 @@ header h1 {
   border: 1px solid var(--accent-light);
 }
 
+/* Tag que mostra o tema atualmente selecionado */
+.theme-tag {
+  display: inline-block;
+  margin: 8px 0 16px 0;
+  padding: 6px 10px;
+  background: var(--accent-light);
+  color: var(--accent);
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  box-shadow: var(--shadow-sm);
+  align-self: flex-start;
+}
+
 /* --- Ecrãs / Cartões --- */
 .screen {
   background: var(--card-bg);
@@ -156,7 +170,7 @@ header h1 {
 
 .theme-cards {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr;
   gap: 12px;
   margin-bottom: 24px;
   position: relative;
@@ -443,5 +457,57 @@ footer {
 
   .screen {
     padding: 32px 40px;
+  }
+}
+
+/* Mobile-specific improvements for small screens */
+@media (max-width: 420px) {
+  .app {
+    padding: 14px 12px;
+  }
+
+  .screen {
+    padding: 18px 14px;
+  }
+
+  header h1 {
+    font-size: 1.2rem;
+  }
+
+  /* Use single-column theme cards for narrow screens */
+  .theme-cards {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .theme-card {
+    padding: 14px 12px;
+    font-size: 1rem;
+  }
+
+  .question {
+    font-size: 1.15rem;
+  }
+
+  .btn {
+    padding: 14px;
+    font-size: 1rem;
+  }
+
+  .choices {
+    gap: 10px;
+  }
+
+  .choice-label {
+    width: 36px;
+    height: 36px;
+    margin-right: 10px;
+  }
+}
+
+/* Reintroduce 2-column theme grid on wider small screens */
+@media (min-width: 420px) and (max-width: 599px) {
+  .theme-cards {
+    grid-template-columns: repeat(2, 1fr);
   }
 }

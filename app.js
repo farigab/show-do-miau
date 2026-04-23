@@ -24,6 +24,7 @@ const nextBtn = document.getElementById('nextBtn');
 const restartBtn = document.getElementById('restartBtn');
 const themeCards = Array.from(document.querySelectorAll('.theme-card'));
 const diceBtn = document.getElementById('random-dice');
+const themeTagEl = document.getElementById('themeTag');
 
 let questions = [];
 let selected = [];
@@ -68,6 +69,15 @@ if (diceBtn) {
 
 async function startGame(theme) {
   currentTheme = theme;
+  if (themeTagEl) {
+    if (theme) {
+      themeTagEl.textContent = `Tema: ${theme}`;
+      themeTagEl.classList.remove('hidden');
+    } else {
+      themeTagEl.classList.add('hidden');
+      themeTagEl.textContent = '';
+    }
+  }
   intro.classList.add('hidden');
   questionScreen.classList.remove('hidden');
   finalScreen.classList.add('hidden');
@@ -256,6 +266,7 @@ function resetToIntro() {
   finalScreen.classList.add('hidden');
   intro.classList.remove('hidden');
   themeCards.forEach(c => c.classList.remove('selected'));
+  if (themeTagEl) { themeTagEl.classList.add('hidden'); themeTagEl.textContent = ''; }
 }
 
 document.addEventListener('keydown', (e) => {
