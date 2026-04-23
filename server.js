@@ -54,13 +54,20 @@ app.use((_req, res, next) => {
   next();
 });
 
-// ── Cache-Control para Service Worker ─────────────────────────────────────────
+// ── Cache-Control para Service Worker e config ───────────────────────────────
 app.use((req, res, next) => {
   // Ensure any per-build service worker file (service-worker.<id>.js)
   // or the legacy service-worker.js is served with no-cache headers.
   if (req.path === '/service-worker.js' || req.path.startsWith('/service-worker.')) {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   }
+
+  // Prevent generated config from being cached by browsers/CDNs so clients
+  // can always fetch the latest buildId/serviceWorkerFile.
+  if (req.path === '/config.js' || req.path === '/config.json') {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  }
+
   next();
 });
 

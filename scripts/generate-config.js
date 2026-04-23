@@ -21,3 +21,19 @@ try {
   console.error('Failed to write config.js:', err);
   process.exit(1);
 }
+
+// Also write a JSON version so clients can fetch the latest config without
+// executing a script (avoids CSP/unsafe-eval and allows cache-busting fetches).
+try {
+  const outJson = path.join(process.cwd(), 'public', 'config.json');
+  const enableSWenv = process.env.ENABLE_SW;
+  const enableSW = enableSWenv === undefined ? undefined : (enableSWenv === 'false' ? false : (enableSWenv === 'true' ? true : undefined));
+  const jsonObj = { serverBase, buildId, serviceWorkerFile };
+  if (enableSW !== undefined) jsonObj.enableSW = enableSW;
+
+  fs.writeFileSync(outJson, JSON.stringify(jsonObj), 'utf8');
+  console.log(`Wrote ${outJson}`);
+} catch (err) {
+  console.error('Failed to write config.json:', err);
+  process.exit(1);
+}

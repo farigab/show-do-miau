@@ -38,6 +38,12 @@ async function build() {
       ],
       globIgnores: [
         'service-worker.js', // IMPORTANTE: Impede que o SW faça cache dele mesmo
+        // Ignore per-build service worker files and generated source maps
+        'service-worker.*.js',
+        'service-worker.*.js.map',
+        // Do not precache runtime config so clients can always fetch latest
+        'config.js',
+        'config.json',
         'node_modules/**',
         'scripts/**',
         '.git/**',

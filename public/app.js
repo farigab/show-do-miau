@@ -469,18 +469,30 @@ document.addEventListener('keydown', (e) => {
 
 // ── Service Worker ─────────────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
-  const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-  const enableSW = globalThis.SHOWDO_CONFIG?.enableSW;
-  if (enableSW === false || isLocalhost) {
-    console.debug('Service worker registration skipped (localhost or disabled by SHOWDO_CONFIG).');
-  } else {
-    const swBase = 'service-worker.js';
-    const buildId = globalThis.SHOWDO_CONFIG?.buildId;
-    const swFileFromConfig = globalThis.SHOWDO_CONFIG?.serviceWorkerFile;
-    const swUrl = swFileFromConfig || (buildId ? `${swBase}?v=${encodeURIComponent(buildId)}` : swBase);
+  (async () => {
+    const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+
+    // Try to fetch a fresh JSON config to avoid stale config served by an
+    // older service worker. Use a cache-busting query param.
+    let liveConfig = null;
+    try {
+      const r = await fetch(`/config.json?_=${Date.now()}`, { cache: 'no-store' });
+      if (r.ok) liveConfig = await r.json();
+    } catch (err) {
+      // ignore — fallback to embedded config
+    }
+
+    const enableSW = (liveConfig?.enableSW ?? globalThis.SHOWDO_CONFIG?.enableSW);
+    if (enableSW === false || isLocalhost) {
+      console.debug('Service worker registration skipped (localhost or disabled by SHOWDO_CONFIG).');
+      return;
+    }
+
+    const swFileFromConfig = liveConfig?.serviceWorkerFile ?? globalThis.SHOWDO_CONFIG?.serviceWorkerFile;
+    const buildId = liveConfig?.buildId ?? globalThis.SHOWDO_CONFIG?.buildId;
+    const swUrl = swFileFromConfig || (buildId ? `service-worker.js?v=${encodeURIComponent(buildId)}` : 'service-worker.js');
 
     let swReloading = false;
-
     function handleSWUpdate() {
       if (swReloading) return;
       swReloading = true;
@@ -493,37 +505,33 @@ if ('serviceWorker' in navigator) {
       }
     }
 
-    // Add global listeners early so we don't miss a fast controllerchange/message
     navigator.serviceWorker.addEventListener('message', (event) => {
       if (event.data?.type === 'SW_UPDATED') handleSWUpdate();
     });
     navigator.serviceWorker.addEventListener('controllerchange', handleSWUpdate);
 
-    // Register and handle update lifecycle proactively so production clients
-    // receive a reload when a new service worker / precache is available.
-    navigator.serviceWorker.register(swUrl).then((reg) => {
+    try {
+      const reg = await navigator.serviceWorker.register(swUrl);
       if (!reg) return;
 
-      // If there's already a waiting worker, trigger update flow.
       if (reg.waiting) {
         handleSWUpdate();
         return;
       }
 
-      // Watch for a new installing worker and handle it when installed.
       reg.addEventListener('updatefound', () => {
         const newWorker = reg.installing;
         if (!newWorker) return;
         newWorker.addEventListener('statechange', () => {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            // New content available — reload the page to load updated assets.
             handleSWUpdate();
           }
         });
       });
 
-      // Ask the browser to check for updates right away.
       try { if (typeof reg.update === 'function') reg.update(); } catch (err) { }
-    }).catch(console.error);
-  }
+    } catch (err) {
+      console.error('Service worker registration failed:', err);
+    }
+  })();
 }
