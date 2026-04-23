@@ -196,7 +196,7 @@ async function startGame(theme) {
 }
 
 async function loadQuestions() {
-  const res = await fetch(QUESTIONS_URL, { cache: 'no-store' });
+  const res = await fetch(QUESTIONS_URL, { cache: 'default' });
   if (!res.ok) throw new Error('Falha ao carregar perguntas locais.');
   return res.json();
 }
@@ -212,12 +212,13 @@ function pickRandom(arr, n) {
 
 function showQuestion() {
   if (!state.selected?.length) {
-    questionEl.textContent =
-      'Não foram encontradas perguntas suficientes para este tema.';
+    questionEl.textContent = 'Não foram encontradas perguntas suficientes...';
     choicesEl.innerHTML = '';
+    nextBtn.textContent = 'Voltar ao início';
+    nextBtn.disabled = false;
+    state.nextAction = resetToIntro;
     return;
   }
-
   const q = state.selected[state.current];
   questionEl.textContent = q.question;
   choicesEl.innerHTML = '';
@@ -369,6 +370,7 @@ function showFinal() {
 
 function resetToIntro() {
   resetState();
+  updateScore();
   finalScreen.classList.add('hidden');
   questionScreen.classList.add('hidden');
   intro.classList.remove('hidden');
