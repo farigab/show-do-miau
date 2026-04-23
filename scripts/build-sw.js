@@ -1,8 +1,17 @@
 const { generateSW } = require('workbox-build');
 const path = require('node:path');
+const { execSync } = require('node:child_process');
 
 async function build() {
   try {
+    // Garantir que `public/config.js` receba um `buildId` novo em cada build.
+    // Assim o cliente regista o service-worker com `?v=<buildId>` e força
+    // a atualização do SW + precache do browser.
+    try {
+      execSync('node scripts/generate-config.js', { stdio: 'inherit' });
+    } catch (err) {
+      console.warn('generate-config.js falhou, prosseguindo:', err?.message || err);
+    }
     const publicDir = path.join(process.cwd(), 'public');
     const swDest = path.join(publicDir, 'service-worker.js');
     const { count, size, warnings } = await generateSW({
