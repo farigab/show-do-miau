@@ -3,10 +3,11 @@ const path = require('node:path');
 
 async function build() {
   try {
-    const swDest = path.join(process.cwd(), 'service-worker.js');
+    const publicDir = path.join(process.cwd(), 'public');
+    const swDest = path.join(publicDir, 'service-worker.js');
     const { count, size, warnings } = await generateSW({
       swDest,
-      globDirectory: process.cwd(),
+      globDirectory: publicDir,
       globPatterns: [
         'index.html',
         'styles.css',

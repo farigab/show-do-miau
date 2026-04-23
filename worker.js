@@ -13,7 +13,7 @@ const extractTextFromResponse = (data) => {
 
 const extractJSONFromText = (text) => {
   if (!text) return null;
-  const cleanedText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+  const cleanedText = text.replaceAll('```json', '').replaceAll('```', '').trim();
   const start = cleanedText.indexOf('[');
   const end = cleanedText.lastIndexOf(']');
   if (start !== -1 && end !== -1 && end > start) {
@@ -27,7 +27,7 @@ const extractJSONFromText = (text) => {
 // Remove qualquer caractere que não seja letra Unicode, número, espaço ou hífen.
 const sanitizeTheme = (raw) => {
   if (!raw || typeof raw !== 'string') return null;
-  const cleaned = raw.replace(/[^\p{L}\p{N} \-]/gu, '').trim().slice(0, 60);
+  const cleaned = raw.replaceAll(/[^\p{L}\p{N} \-]/gu, '').trim().slice(0, 60);
   return cleaned || null;
 };
 
@@ -37,7 +37,7 @@ const sanitizeCount = (raw) => Math.min(Math.max(1, Number(raw) || 10), 20);
 export default {
   async fetch(request, env) {
     const originHeader = request.headers.get('origin') || '';
-    const configuredFrontend = (env.FRONTEND_ORIGIN || '*').replace(/"/g, '');
+    const configuredFrontend = (env.FRONTEND_ORIGIN || '*').replaceAll('"', '');
 
     let originToAllow = configuredFrontend;
     if (originHeader) {
@@ -97,7 +97,7 @@ export default {
       // para evitar que apareça em logs de proxy/CDN.
       const apiUrl = (env.GENERATIVE_API_URL ||
         'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent'
-      ).replace(/"/g, '');
+      ).replaceAll('"', '');
 
       const headers = { 'Content-Type': 'application/json' };
       if (env.GOOGLE_API_KEY) {

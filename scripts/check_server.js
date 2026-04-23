@@ -7,7 +7,7 @@
       const url = base + p;
       const res = await fetch(url);
       const text = await res.text().catch(() => '');
-      const snippet = text ? text.slice(0, 240).replace(/\s+/g, ' ') : '(no body)';
+      const snippet = text ? text.slice(0, 240).replaceAll(/\s+/g, ' ') : '(no body)';
       console.log(`${p} -> ${res.status} ${res.statusText} - ${snippet}`);
     } catch (err) {
       console.error(`${p} -> ERROR ${err.message}`);

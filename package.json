@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "prestart": "node scripts/build-sw.js",
+    "prestart:server": "node scripts/build-sw.js",
     "start": "dotenv -e .env -- npx http-server -c-1 . -p 8080",
     "build:sw": "node scripts/build-sw.js",
     "build": "npm run build:sw",

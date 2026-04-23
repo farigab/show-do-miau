@@ -144,7 +144,7 @@ function extractTextFromResponse(data) {
 
 function extractJSONFromText(text) {
   if (!text) return null;
-  const clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
+  const clean = text.replaceAll('```json', '').replaceAll('```', '').trim();
   const start = clean.indexOf('[');
   const end = clean.lastIndexOf(']');
   if (start === -1 || end <= start) return null;
@@ -162,7 +162,7 @@ app.post('/api/generate-questions', express.json({ limit: '16kb' }), async (req,
     return res.status(400).json({ ok: false, error: 'theme é obrigatório e deve ser string.' });
   }
 
-  const theme = rawTheme.replace(/[^\p{L}\p{N} \-]/gu, '').trim().slice(0, 60);
+  const theme = rawTheme.replaceAll(/[^\p{L}\p{N} \-]/gu, '').trim().slice(0, 60);
   if (!theme) {
     return res.status(400).json({ ok: false, error: 'theme inválido após sanitização.' });
   }
