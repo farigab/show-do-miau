@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "file": "service-worker.js",
   "sources": [
     "../../../AppData/Local/Temp/593a4cd986d167e1ee604dfc8cde11bb/service-worker.js"
