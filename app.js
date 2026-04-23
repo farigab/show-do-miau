@@ -1,8 +1,6 @@
 const QUESTIONS_URL = './questions.json';
 const NUM_QUESTIONS = 10;
 
-// Runtime-configurable server base. Crie um `config.js` que defina:
-// window.SHOWDO_CONFIG = { serverBase: 'https://seu-backend.example.com' }
 const DEFAULT_LOCAL_SERVER = 'http://localhost:3000';
 const SERVER_BASE =
   (globalThis.SHOWDO_CONFIG?.serverBase) ||
@@ -32,26 +30,33 @@ const diceBtn = document.getElementById('random-dice');
 const themeTagEl = document.getElementById('themeTag');
 
 // ── Estado centralizado ───────────────────────────────────────────────────────
-// Um único objeto de estado evita variáveis soltas e torna o reset trivial.
-const INITIAL_STATE = Object.freeze({
-  questions: [],
-  selected: [],
-  current: 0,
-  score: 0,
-  answered: false,
-  autoAdvanceTimer: null,
-  currentTheme: null,
-});
+// [FIX #15] Usa factory function em vez de Object.freeze + spread para evitar
+// referências de array compartilhadas entre resets.
+function createInitialState() {
+  return {
+    questions: [],
+    selected: [],
+    current: 0,
+    score: 0,
+    answered: false,
+    autoAdvanceTimer: null,
+    currentTheme: null,
+    // [FIX #1] Ação do nextBtn gerida pelo estado — handler único no DOM.
+    nextAction: null,
+  };
+}
 
-let state = { ...INITIAL_STATE };
+let state = createInitialState();
 
 function resetState() {
   clearAutoAdvance();
-  state = { ...INITIAL_STATE };
+  state = createInitialState();
 }
 
+// ── [FIX #5] AbortController — cancela fetches pendentes ao mudar de tema ────
+let currentFetchController = null;
+
 // ── Helpers de auto-avanço ────────────────────────────────────────────────────
-// Extraído para evitar a repetição em 5+ lugares do código original.
 function clearAutoAdvance() {
   if (state.autoAdvanceTimer) {
     clearTimeout(state.autoAdvanceTimer);
@@ -60,12 +65,19 @@ function clearAutoAdvance() {
   explanationEl?.querySelector('.countdown')?.remove();
 }
 
-// ── Listeners de UI ───────────────────────────────────────────────────────────
-nextBtn.addEventListener('click', onNext);
+// ── [FIX #1] Handler único para o nextBtn ─────────────────────────────────────
+// Em vez de misturar addEventListener permanente com onclick pontual,
+// um único listener despacha para state.nextAction.
+// Isso elimina o bug de double-dispatch no fluxo de erro.
+nextBtn.addEventListener('click', () => {
+  if (typeof state.nextAction === 'function') state.nextAction();
+});
+
 restartBtn.addEventListener('click', resetToIntro);
 
+// ── Listeners de UI ───────────────────────────────────────────────────────────
 themeCards.forEach(card => {
-  if (!card.dataset.theme) return; // ignora o botão de dado
+  if (!card.dataset.theme) return;
   card.addEventListener('click', () => {
     themeCards.forEach(c => c.classList.remove('selected'));
     card.classList.add('selected');
@@ -86,16 +98,20 @@ if (diceBtn) {
         chosen.classList.add('selected');
         startGame(chosen.dataset.theme);
       }
-    }, 700); // mesmo tempo que a animação CSS
+    }, 700);
   });
 }
 
 // ── Fluxo do jogo ─────────────────────────────────────────────────────────────
 async function startGame(theme) {
+  // [FIX #5] Aborta qualquer fetch em curso antes de iniciar um novo.
+  currentFetchController?.abort();
+  currentFetchController = new AbortController();
+  const { signal } = currentFetchController;
+
   resetState();
   state.currentTheme = theme;
 
-  // Atualiza a tag de tema
   if (themeTagEl) {
     themeTagEl.textContent = theme ? `Tema: ${theme}` : '';
     themeTagEl.classList.toggle('hidden', !theme);
@@ -112,14 +128,16 @@ async function startGame(theme) {
   }
 
   try {
-    // 1. Tenta gerar perguntas via servidor generativo
     let loaded = false;
+
     if (theme) {
       try {
         const resp = await fetch(`${SERVER_BASE}/api/generate-questions`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ theme, count: NUM_QUESTIONS }),
+          // [FIX #5] Signal passado ao fetch.
+          signal,
         });
         if (resp.ok) {
           const data = await resp.json();
@@ -130,16 +148,20 @@ async function startGame(theme) {
           }
         }
       } catch (err) {
-        console.warn('Falha ao chamar servidor generativo:', err);
+        // AbortError é esperado quando o utilizador muda de tema rapidamente — não logar como erro.
+        if (err.name !== 'AbortError') {
+          console.warn('Falha ao chamar servidor generativo:', err);
+        } else {
+          // Fetch cancelado intencionalmente — sai silenciosamente.
+          return;
+        }
       }
     }
 
-    // 2. Fallback: questions.json local
     if (!loaded) {
       state.questions = await loadQuestions();
     }
 
-    // 3. Filtra por tema
     let pool = state.questions;
     if (theme && theme !== 'Misturado') {
       pool = state.questions.filter(
@@ -147,29 +169,29 @@ async function startGame(theme) {
       );
     }
 
-    // 4. Verifica se há perguntas suficientes
     if (pool.length === 0) {
       throw new Error(`Nenhuma pergunta encontrada para o tema "${theme}".`);
     }
 
     state.selected = pickRandom(pool, NUM_QUESTIONS);
-    state.current = 0;
-    state.score = 0;
-    state.answered = false;
+    // [FIX #16] Removidas as linhas redundantes após resetState():
+    // current, score e answered já são 0/false vindos de createInitialState().
     updateScore();
 
     if (progressFill) progressFill.style.width = '0%';
     showQuestion();
 
   } catch (err) {
-    // Feedback visual de erro — não deixa o jogo em estado quebrado
+    if (err.name === 'AbortError') return;
+
     console.error('Erro ao iniciar jogo:', err);
     questionEl.textContent =
       `❌ Erro ao carregar perguntas: ${err.message} Tente novamente.`;
     choicesEl.innerHTML = '';
     nextBtn.textContent = 'Voltar ao início';
     nextBtn.disabled = false;
-    nextBtn.onclick = resetToIntro; // override pontual
+    // [FIX #1] Define a ação no estado — o handler único vai executá-la.
+    state.nextAction = resetToIntro;
   }
 }
 
@@ -207,11 +229,13 @@ function showQuestion() {
 
   state.answered = false;
   nextBtn.disabled = true;
-  nextBtn.onclick = onNext; // restaura o handler padrão (pode ter sido sobrescrito no erro)
+  // [FIX #1] Define a ação padrão de "próxima" para este passo do jogo.
+  state.nextAction = onNext;
 
-  // optional chaining — evita TypeError se o elemento não existir
-  progressText?.setAttribute('textContent', `${state.current + 1}/${state.selected.length}`);
   if (progressText) progressText.textContent = `${state.current + 1}/${state.selected.length}`;
+  // [FIX #6] Linha setAttribute('textContent', ...) removida — era dead code
+  // (setAttribute não altera a propriedade textContent do DOM).
+
   if (progressFill) {
     progressFill.style.width =
       `${(state.current / state.selected.length) * 100}%`;
@@ -253,7 +277,6 @@ function onChoice(e) {
 
   if (isCorrect) {
     e.currentTarget.classList.add('correct');
-    // Acessibilidade: informa o leitor de tela sobre o resultado
     e.currentTarget.setAttribute('aria-label',
       `Resposta correta: ${state.selected[state.current].choices[idx]}`);
     state.score++;
@@ -284,7 +307,9 @@ function onChoice(e) {
   nextBtn.textContent =
     state.current === state.selected.length - 1 ? 'Finalizar' : 'Próxima';
 
-  // Countdown visual de auto-avanço
+  // [FIX #7] Usa dois requestAnimationFrame aninhados em vez de setTimeout(20).
+  // Garante que o browser pintou o reflow antes de iniciar a transição CSS,
+  // evitando o caso em que frames lentos perdem o trigger.
   if (AUTO_ADVANCE_ENABLED && explanationEl) {
     const cd = document.createElement('div');
     const fill = document.createElement('div');
@@ -294,9 +319,11 @@ function onChoice(e) {
     cd.appendChild(fill);
     explanationEl.appendChild(cd);
 
-    void fill.offsetWidth; // força reflow para a transição funcionar
+    void fill.offsetWidth; // força reflow inicial para a propriedade ser registada
     fill.style.transition = `width ${AUTO_ADVANCE_DELAY}ms linear`;
-    setTimeout(() => { fill.style.width = '0%'; }, 20);
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => { fill.style.width = '0%'; })
+    );
 
     state.autoAdvanceTimer = setTimeout(() => {
       state.autoAdvanceTimer = null;
@@ -350,17 +377,17 @@ function resetToIntro() {
     themeTagEl.classList.add('hidden');
     themeTagEl.textContent = '';
   }
-  // Restaura nextBtn ao estado padrão para a próxima partida
   nextBtn.textContent = 'Próxima';
   nextBtn.disabled = true;
-  nextBtn.onclick = onNext;
+  // state.nextAction já foi reposto para null pelo resetState().
 }
 
 // ── Atalhos de teclado ────────────────────────────────────────────────────────
 document.addEventListener('keydown', (e) => {
   if (questionScreen.classList.contains('hidden')) return;
-  if (e.key >= '1' && e.key <= '9') {
-    const idx = Number(e.key) - 1;
+  // [FIX #14] parseInt com radix explícito — mais claro que comparação de strings.
+  const idx = Number.parseInt(e.key, 10) - 1;
+  if (!Number.isNaN(idx) && idx >= 0 && idx < 9) {
     choicesEl.querySelector(`button[data-index="${idx}"]`)?.click();
   }
 });
@@ -369,15 +396,13 @@ document.addEventListener('keydown', (e) => {
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('service-worker.js').catch(console.error);
 
-  // Ponto ÚNICO de reload — o código original tinha dois listeners que podiam
-  // disparar em sequência causando um loop ou reload duplo.
   let swReloading = false;
 
   function handleSWUpdate() {
     if (swReloading) return;
     swReloading = true;
     const url = new URL(location.href);
-    url.searchParams.set('_sw', Date.now()); // cache-bust
+    url.searchParams.set('_sw', Date.now());
     try {
       location.replace(url.toString());
     } catch {
@@ -385,11 +410,9 @@ if ('serviceWorker' in navigator) {
     }
   }
 
-  // O SW avisa explicitamente quando termina de ativar
   navigator.serviceWorker.addEventListener('message', (event) => {
     if (event.data?.type === 'SW_UPDATED') handleSWUpdate();
   });
 
-  // Fallback: troca de controlador (cobertura de browsers que não suportam postMessage do SW)
   navigator.serviceWorker.addEventListener('controllerchange', handleSWUpdate);
 }

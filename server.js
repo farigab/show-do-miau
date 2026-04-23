@@ -6,6 +6,12 @@ require('dotenv').config();
 const path = require('node:path');
 
 const app = express();
+const IS_PROD = process.env.NODE_ENV === 'production';
+
+// ── Trust Proxy ───────────────────────────────────────────────────────────────
+// [FIX #8] Sem isso, req.ip é sempre o IP do proxy (nginx/Cloudflare),
+// tornando o rate limit global em vez de por utilizador.
+app.set('trust proxy', 1);
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || '*';
@@ -15,24 +21,21 @@ app.use(cors({
 }));
 
 // ── Rate Limiting ─────────────────────────────────────────────────────────────
-// Protege a rota de geração de abuso — cada chamada consome tokens na API do Google.
 const apiLimiter = rateLimit({
-  windowMs: 60 * 1000, // janela de 1 minuto
-  max: 20,         // máx 20 requisições por IP por janela
+  windowMs: 60 * 1000,
+  max: 20,
   standardHeaders: true,
   legacyHeaders: false,
   message: { ok: false, error: 'Muitas requisições. Tente novamente em 1 minuto.' },
 });
 app.use('/api/', apiLimiter);
 
-app.use(express.json({ limit: '64kb' })); // reduzido de 1mb — body de entrada é pequeno
-
 // ── Content-Security-Policy ───────────────────────────────────────────────────
-// Removido 'unsafe-inline' de style-src. Se houver estilos inline no HTML,
-// mova-os para styles.css ou use um nonce gerado por request.
+// [FIX #4] localhost removido em produção — só presente quando NODE_ENV != production.
+const devConnect = IS_PROD ? '' : ' http://localhost:3000';
 const CSP = [
   "default-src 'self'",
-  `connect-src 'self' http://localhost:3000 https://generativelanguage.googleapis.com https://fonts.googleapis.com https://fonts.gstatic.com`,
+  `connect-src 'self'${devConnect} https://generativelanguage.googleapis.com https://fonts.googleapis.com https://fonts.gstatic.com`,
   "font-src 'self' https://fonts.gstatic.com",
   "style-src 'self' https://fonts.googleapis.com",
   "img-src 'self' data:",
@@ -55,8 +58,6 @@ app.use((req, res, next) => {
 });
 
 // ── Bloqueio de arquivos sensíveis ────────────────────────────────────────────
-// O express.static original servia server.js, wrangler.toml, package.json, etc.
-// Este middleware bloqueia antes de chegar ao static handler.
 const BLOCKED_BASENAMES = new Set([
   'server.js', 'worker.js', 'wrangler.toml', 'wrangler.json',
   'package.json', 'package-lock.json', '.env', '.env.example',
@@ -69,17 +70,14 @@ app.use((req, res, next) => {
   const basename = path.basename(req.path);
   const ext = path.extname(req.path);
 
-  // Bloqueia arquivos sensíveis pelo nome
   if (BLOCKED_BASENAMES.has(basename)) {
     return res.status(403).json({ error: 'Forbidden' });
   }
 
-  // Bloqueia pastas internas
   if (/^\/(scripts|node_modules|\.git)(\/|$)/.test(req.path)) {
     return res.status(403).json({ error: 'Forbidden' });
   }
 
-  // Bloqueia extensões desconhecidas (permite raiz e caminhos sem extensão para o SPA)
   if (ext && !ALLOWED_EXT.test(ext)) {
     return res.status(403).json({ error: 'Forbidden' });
   }
@@ -89,7 +87,7 @@ app.use((req, res, next) => {
 
 app.use(express.static(path.join(__dirname)));
 
-// SPA fallback — apenas rotas sem extensão que não sejam API
+// SPA fallback
 app.get(/^\/(?!api).*/, (req, res) => {
   if (path.extname(req.path)) return res.status(404).send('Not found');
   res.sendFile(path.join(__dirname, 'index.html'));
@@ -98,7 +96,6 @@ app.get(/^\/(?!api).*/, (req, res) => {
 // ── Configuração ──────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 
-// Modelo alinhado com o worker.js / wrangler.toml
 const GENERATIVE_API_URL =
   process.env.GENERATIVE_API_URL ||
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent';
@@ -110,10 +107,8 @@ async function callGenerativeAPI(prompt) {
   const headers = { 'Content-Type': 'application/json' };
 
   if (GOOGLE_API_KEY) {
-    // Chave enviada APENAS no header — nunca na URL para não vazar em logs de proxy
     headers['x-goog-api-key'] = GOOGLE_API_KEY;
   } else {
-    // Autenticação via conta de serviço (Application Default Credentials)
     const auth = new GoogleAuth({ scopes: ['https://www.googleapis.com/auth/cloud-platform'] });
     const client = await auth.getClient();
     const token = await client.getAccessToken();
@@ -141,8 +136,6 @@ async function callGenerativeAPI(prompt) {
 }
 
 // ── Utilitários de parse ──────────────────────────────────────────────────────
-// Duplicados intencionalmente em server.js e worker.js (ambientes diferentes).
-// Se criar um monorepo, extraia para um pacote compartilhado.
 function extractTextFromResponse(data) {
   if (!data) return '';
   if (typeof data === 'string') return data;
@@ -159,22 +152,21 @@ function extractJSONFromText(text) {
 }
 
 // ── Rota de geração ───────────────────────────────────────────────────────────
-app.post('/api/generate-questions', async (req, res) => {
+// [FIX #17] express.json() aplicado por rota, não globalmente.
+// Reduz superfície de parsing desnecessário em rotas estáticas.
+app.post('/api/generate-questions', express.json({ limit: '16kb' }), async (req, res) => {
   const rawTheme = req.body?.theme;
   const rawCount = req.body?.count;
 
-  // Validação de tipo
   if (!rawTheme || typeof rawTheme !== 'string') {
     return res.status(400).json({ ok: false, error: 'theme é obrigatório e deve ser string.' });
   }
 
-  // Sanitização: remove caracteres que poderiam quebrar o prompt ou injetar instruções
   const theme = rawTheme.replace(/[^\p{L}\p{N} \-]/gu, '').trim().slice(0, 60);
   if (!theme) {
     return res.status(400).json({ ok: false, error: 'theme inválido após sanitização.' });
   }
 
-  // Clamp de count: mínimo 1, máximo 20 — impede prompts gigantes
   const count = Math.min(Math.max(1, Number(rawCount) || 10), 20);
 
   const prompt =
@@ -218,5 +210,5 @@ app.post('/api/generate-questions', async (req, res) => {
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 app.listen(PORT, () =>
-  console.log(`Servidor proxy generativo a correr em http://localhost:${PORT}`)
+  console.log(`Servidor proxy generativo a correr em http://localhost:${PORT}`),
 );
