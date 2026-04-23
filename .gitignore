@@ -40,7 +40,12 @@ temp/
 # Testes
 coverage/
 
-# Arquivos específicos (opcional)
+# Arquivos específicos
 *.tgz
-# Generated runtime config
+
+# ── Gerados em build — NÃO commitar ──────────────────────────────────────────
+# Criado por: npm run generate-config  ou  npm run build:pages
 config.js
+
+# Criado por: npm run build:sw  ou  npm start  (via Workbox)
+service-worker.js
