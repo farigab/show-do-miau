@@ -33,11 +33,16 @@ app.use('/api/', apiLimiter);
 // ── Content-Security-Policy ───────────────────────────────────────────────────
 // [FIX #4] localhost removido em produção — só presente quando NODE_ENV != production.
 const devConnect = IS_PROD ? '' : ' http://localhost:3000';
+const connectSrc = `connect-src 'self'${devConnect} https://generativelanguage.googleapis.com https://fonts.googleapis.com https://fonts.gstatic.com`;
+const fontSrc = "font-src 'self' https://fonts.gstatic.com";
+const styleSrc = IS_PROD
+  ? "style-src 'self' https://fonts.googleapis.com"
+  : "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com";
 const CSP = [
   "default-src 'self'",
-  `connect-src 'self'${devConnect} https://generativelanguage.googleapis.com https://fonts.googleapis.com https://fonts.gstatic.com`,
-  "font-src 'self' https://fonts.gstatic.com",
-  "style-src 'self' https://fonts.googleapis.com",
+  connectSrc,
+  fontSrc,
+  styleSrc,
   "img-src 'self' data:",
   "script-src 'self'",
   "object-src 'none'",
@@ -64,7 +69,7 @@ const BLOCKED_BASENAMES = new Set([
   'generate_questions.js',
 ]);
 
-const ALLOWED_EXT = /\.(html|css|js|json|png|svg|ico|webp|jpg|jpeg|woff2?|ttf|eot)$/i;
+const ALLOWED_EXT = /\.(html|css|js|json|webmanifest|png|svg|ico|webp|jpg|jpeg|woff2?|ttf|eot)$/i;
 
 app.use((req, res, next) => {
   const basename = path.basename(req.path);
