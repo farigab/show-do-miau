@@ -5,6 +5,12 @@
 const BUILD_ID = '__BUILD_ID__';
 const CACHE_NAME = `showdo-miau-${BUILD_ID}`;
 
+// FIX: self.__WB_MANIFEST is the injection point required by injectManifest.
+// At build time, Workbox replaces this with the versioned precache manifest
+// (array of {url, revision} objects). At dev time (no build), it falls back
+// to an empty array so the SW still loads without errors.
+const WB_PRECACHE = self.__WB_MANIFEST || [];
+
 const ASSETS = [
   '/',
   '/index.html',
@@ -18,8 +24,14 @@ const ASSETS = [
 
 self.addEventListener('install', (event) => {
   globalThis.skipWaiting();
+
+  // Merge Workbox's versioned precache URLs with the manual ASSETS list.
+  // WB_PRECACHE entries have a `url` property; de-duplicate against ASSETS.
+  const precacheUrls = WB_PRECACHE.map(e => (typeof e === 'string' ? e : e.url));
+  const allAssets = [...new Set([...ASSETS, ...precacheUrls])];
+
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then(cache => cache.addAll(allAssets))
   );
 });
 
