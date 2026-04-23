@@ -1,4 +1,7 @@
-const { generateSW } = require('workbox-build');
+// FIX: Changed from generateSW (which overwrites your custom SW completely) to
+// injectManifest (which merges Workbox's precache manifest INTO your own SW).
+// Also injects the BUILD_ID placeholder so CACHE_NAME is unique per deploy.
+const { injectManifest } = require('workbox-build');
 const path = require('node:path');
 const fs = require('node:fs');
 const { execSync } = require('node:child_process');
@@ -6,42 +9,47 @@ const { execSync } = require('node:child_process');
 async function build() {
   try {
     // Garantir que `public/config.js` receba um `buildId` novo em cada build.
-    // Assim o cliente regista o service-worker com `?v=<buildId>` e força
-    // a atualização do SW + precache do browser.
     try {
       execSync('node scripts/generate-config.js', { stdio: 'inherit' });
     } catch (err) {
       console.warn('generate-config.js falhou, prosseguindo:', err?.message || err);
     }
+
     const publicDir = path.join(process.cwd(), 'public');
 
-    // Read generated config.js to find the per-build service worker filename.
-    let swDest;
+    // Read generated config.js to find the per-build service worker filename and buildId.
+    let swDestFilename = 'service-worker.js';
+    let buildId = String(Date.now());
     try {
       const cfg = fs.readFileSync(path.join(publicDir, 'config.js'), 'utf8');
-      const m = cfg.match(/globalThis\.SHOWDO_CONFIG\.serviceWorkerFile\s*=\s*(['"])(.*?)\1/);
-      if (m && m[2]) {
-        swDest = path.join(publicDir, m[2]);
-      }
+
+      const mFile = cfg.match(/globalThis\.SHOWDO_CONFIG\.serviceWorkerFile\s*=\s*(['"])(.*?)\1/);
+      if (mFile && mFile[2]) swDestFilename = mFile[2];
+
+      const mId = cfg.match(/globalThis\.SHOWDO_CONFIG\.buildId\s*=\s*(['"])(.*?)\1/);
+      if (mId && mId[2]) buildId = mId[2];
     } catch (err) {
-      // fall back to default
+      console.warn('Não foi possível ler config.js, usando defaults:', err?.message);
     }
-    if (!swDest) swDest = path.join(publicDir, 'service-worker.js');
-    const { count, size, warnings } = await generateSW({
+
+    const swSrc = path.join(process.cwd(), 'service-worker.js'); // your custom SW template
+    const swDest = path.join(publicDir, swDestFilename);
+
+    // FIX: injectManifest reads `swSrc`, injects the precache manifest, and
+    // writes the result to `swDest`. Your custom SW code is preserved intact.
+    const { count, size, warnings } = await injectManifest({
+      swSrc,
       swDest,
       globDirectory: publicDir,
-
-      // 1. MODIFICADO: Agora pegamos CSS, JS e HTML dinamicamente para o precache
       globPatterns: [
         '**/*.{html,css,js,json}',
         'icons/**/*.*'
       ],
       globIgnores: [
-        'service-worker.js', // IMPORTANTE: Impede que o SW faça cache dele mesmo
-        // Ignore per-build service worker files and generated source maps
+        'service-worker.js',
         'service-worker.*.js',
         'service-worker.*.js.map',
-        // Do not precache runtime config so clients can always fetch latest
+        // Do not precache runtime config so clients always fetch latest
         'config.js',
         'config.json',
         'node_modules/**',
@@ -49,25 +57,6 @@ async function build() {
         '.git/**',
         'package-lock.json'
       ],
-      navigateFallback: '/index.html',
-      navigateFallbackDenylist: [/^\/api\//],
-      clientsClaim: true,
-      skipWaiting: true,
-
-      // 2. MODIFICADO: Removemos o app.js e styles.css daqui, pois agora
-      // eles estão no precache (globPatterns) e serão versionados automaticamente.
-      runtimeCaching: [
-        {
-          urlPattern: /\/api\//,
-          handler: 'NetworkFirst',
-          options: {
-            cacheName: 'api-runtime-cache',
-            networkTimeoutSeconds: 10,
-            expiration: { maxEntries: 50, maxAgeSeconds: 24 * 60 * 60 },
-            cacheableResponse: { statuses: [0, 200] }
-          }
-        }
-      ]
     });
 
     if (warnings?.length) {
@@ -75,7 +64,14 @@ async function build() {
       for (const w of warnings) console.warn(w);
     }
 
-    console.log(`Generated ${count} files, total ${size} bytes, wrote ${swDest}`);
+    // FIX: Replace the BUILD_ID placeholder in the emitted SW file with the
+    // real buildId so CACHE_NAME is unique and old caches are evicted cleanly.
+    let swContent = fs.readFileSync(swDest, 'utf8');
+    swContent = swContent.replaceAll('__BUILD_ID__', buildId);
+    fs.writeFileSync(swDest, swContent, 'utf8');
+
+    console.log(`Generated SW with ${count} precached files (${size} bytes) → ${swDest}`);
+    console.log(`CACHE_NAME will be: showdo-miau-${buildId}`);
   } catch (err) {
     console.error('Error generating service worker:', err);
     process.exit(1);

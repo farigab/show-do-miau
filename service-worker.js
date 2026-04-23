@@ -1,4 +1,10 @@
-const CACHE_NAME = 'showdo-miau-v5';
+// FIX: CACHE_NAME now includes the build ID injected by build-sw.js at build
+// time (placeholder __BUILD_ID__ is replaced with the actual timestamp).
+// This guarantees every deploy creates a distinct cache, so old stale assets
+// are evicted automatically on activate.
+const BUILD_ID = '__BUILD_ID__';
+const CACHE_NAME = `showdo-miau-${BUILD_ID}`;
+
 const ASSETS = [
   '/',
   '/index.html',
@@ -9,6 +15,7 @@ const ASSETS = [
   '/icons/icon-192.svg',
   '/icons/icon-512.svg'
 ];
+
 self.addEventListener('install', (event) => {
   globalThis.skipWaiting();
   event.waitUntil(

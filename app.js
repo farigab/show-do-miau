@@ -278,31 +278,36 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// ── Service Worker Registration ───────────────────────────────────────────────
+// FIX: Read the versioned SW filename from config (set by generate-config.js at
+// build time) so the browser always registers the correct per-build file.
+// Fallback to the unversioned name for local development where no config exists.
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('service-worker.js').catch(() => {});
+  const swFile = globalThis.SHOWDO_CONFIG?.serviceWorkerFile || 'service-worker.js';
+
+  navigator.serviceWorker.register(swFile).catch(err => {
+    console.warn('Service worker registration failed:', err);
+  });
 
   // Reload the page when the service worker signals that an update finished
   // activating. We replace the current history entry with a cache-busted
   // URL so the browser fetches fresh resources (best-effort).
+  // FIX: Removed the `controllerchange` listener that was causing a second
+  // reload race condition. A single reload triggered by SW_UPDATED is enough.
   navigator.serviceWorker.addEventListener('message', (event) => {
     if (!event.data) return;
     if (event.data.type === 'SW_UPDATED') {
+      // Guard against the message firing more than once in the same page load.
+      if (window.__swReloading) return;
+      window.__swReloading = true;
+
       const url = new URL(location.href);
       url.searchParams.set('_sw', Date.now());
       try {
         location.replace(url.toString());
       } catch (e) {
-        // fallback to a normal reload if replace fails
         location.reload();
       }
-    }
-  });
-
-  // As a fallback, reload when the controlling service worker changes.
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!window.__swReloading) {
-      window.__swReloading = true;
-      window.location.reload();
     }
   });
 }
