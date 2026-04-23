@@ -469,7 +469,10 @@ document.addEventListener('keydown', (e) => {
 
 // ── Service Worker ─────────────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('service-worker.js').catch(console.error);
+  const swBase = 'service-worker.js';
+  const buildId = globalThis.SHOWDO_CONFIG?.buildId;
+  const swUrl = buildId ? `${swBase}?v=${encodeURIComponent(buildId)}` : swBase;
+  navigator.serviceWorker.register(swUrl).catch(console.error);
 
   let swReloading = false;
 
