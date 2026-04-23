@@ -10,8 +10,6 @@ async function build() {
       globDirectory: publicDir,
       globPatterns: [
         'index.html',
-        'styles.css',
-        'app.js',
         'questions.json',
         'manifest.json',
         'icons/**/*.*'
@@ -43,6 +41,25 @@ async function build() {
           options: {
             cacheName: 'config-runtime-cache',
             expiration: { maxEntries: 5, maxAgeSeconds: 24 * 60 * 60 }
+          }
+        },
+        {
+          // Ensure JS and CSS are fetched from network first so updates propagate
+          urlPattern: /(^|\/)app\.js$/,
+          handler: 'NetworkFirst',
+          options: {
+            cacheName: 'static-runtime-cache',
+            expiration: { maxEntries: 20, maxAgeSeconds: 24 * 60 * 60 },
+            cacheableResponse: { statuses: [0, 200] }
+          }
+        },
+        {
+          urlPattern: /(^|\/)styles\.css$/,
+          handler: 'NetworkFirst',
+          options: {
+            cacheName: 'static-runtime-cache',
+            expiration: { maxEntries: 20, maxAgeSeconds: 24 * 60 * 60 },
+            cacheableResponse: { statuses: [0, 200] }
           }
         }
       ]
