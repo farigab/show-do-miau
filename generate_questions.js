@@ -36,7 +36,7 @@ async function generate() {
 
       if (resp.ok) {
         const data = await resp.json().catch(() => null);
-        if (data && data.ok && Array.isArray(data.questions)) {
+        if (data?.ok && Array.isArray(data.questions)) {
           fs.writeFileSync('questions.json', JSON.stringify(data.questions, null, 2), 'utf8');
           console.log('✅ questions.json criado via servidor local!');
           return;
@@ -63,7 +63,7 @@ async function generate() {
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
           temperature: 0.7,
-          maxOutputTokens: 2000
+          maxOutputTokens: 8192
         },
       };
 
