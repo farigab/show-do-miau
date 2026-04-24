@@ -98,7 +98,7 @@ export default {
       // [FIX #2] API key enviada APENAS no header — nunca concatenada na URL
       // para evitar que apareça em logs de proxy/CDN.
       const apiUrl = (env.GENERATIVE_API_URL ||
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent'
+        'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent'
       ).replaceAll('"', '');
 
       const headers = { 'Content-Type': 'application/json' };

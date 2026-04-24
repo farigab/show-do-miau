@@ -1,7 +1,7 @@
 // Workbox injects the versioned precache manifest here at build time.
 const WB_PRECACHE = self.__WB_MANIFEST || [];
 
-const IS_VERSIONED = new RegExp(/service-worker\.\d+\.js/).exec(self.location.href);
+const IS_VERSIONED = /service-worker\.\d+\.js/.test(self.location.href);
 const BUILD_ID = '__BUILD_ID__';
 const CACHE_NAME = `showdo-miau-${BUILD_ID}`;
 
@@ -73,6 +73,18 @@ self.addEventListener('fetch', (event) => {
 
   // Network-first for config so updates propagate immediately
   if (url.pathname === '/config.js' || url.pathname === '/config.json') {
+    event.respondWith(
+      fetch(event.request.clone()).then(res => {
+        const clone = res.clone();
+        caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
+        return res;
+      }).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Network-first for questions.json so updated question sets are observed
+  if (url.pathname === '/questions.json') {
     event.respondWith(
       fetch(event.request.clone()).then(res => {
         const clone = res.clone();

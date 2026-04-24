@@ -9,6 +9,12 @@ const SERVER_BASE = (globalThis.SHOWDO_CONFIG?.serverBase)
 const AUTO_ADVANCE_DELAY = 15000;
 const AUTO_ADVANCE_ENABLED = true;
 
+const safeStorage = {
+  get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch { } },
+  remove: (k) => { try { localStorage.removeItem(k); } catch { } },
+};
+
 const intro = document.getElementById('intro');
 const questionScreen = document.getElementById('questionScreen');
 const finalScreen = document.getElementById('finalScreen');
@@ -184,7 +190,14 @@ async function startGame(theme) {
   }
 
   if (!loaded) {
-    questions = await loadQuestions();
+    try {
+      questions = await loadQuestions();
+    } catch (err) {
+      console.error('Erro ao carregar perguntas:', err);
+      questionEl.textContent = 'Erro ao carregar perguntas. Verifique sua conexão e atualize a página.';
+      choicesEl.innerHTML = '';
+      return;
+    }
   }
 
   let pool = questions;
@@ -325,9 +338,9 @@ function showFinal() {
   if (explanationEl) { const prev = explanationEl.querySelector('.countdown'); if (prev) prev.remove(); }
 
   const key = 'showdo_miau_highscore';
-  const prev = Number(localStorage.getItem(key) || 0);
+  const prev = Number(safeStorage.get(key) || 0);
   if (score > prev) {
-    localStorage.setItem(key, String(score));
+    safeStorage.set(key, String(score));
     highScoreEl.textContent = score + ' (novo recorde!)';
   } else {
     highScoreEl.textContent = prev;

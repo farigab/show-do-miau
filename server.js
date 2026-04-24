@@ -63,6 +63,11 @@ app.use((req, res, next) => {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   }
 
+  // sw-boot should always be freshly fetched so it can detect deploys.
+  if (req.path === '/sw-boot.js') {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  }
+
   // Prevent generated config from being cached by browsers/CDNs so clients
   // can always fetch the latest buildId/serviceWorkerFile.
   if (req.path === '/config.js' || req.path === '/config.json') {
@@ -131,7 +136,7 @@ const PORT = process.env.PORT || 3000;
 
 const GENERATIVE_API_URL =
   process.env.GENERATIVE_API_URL ||
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent';
+  'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent';
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
@@ -158,6 +163,7 @@ async function callGenerativeAPI(prompt) {
     method: 'POST',
     headers,
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(10_000),
   });
 
   if (!res.ok) {

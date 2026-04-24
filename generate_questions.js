@@ -6,6 +6,8 @@ let count = 10;
 let theme = null;
 let serverUrl = process.env.GENERATIVE_SERVER_URL || null;
 
+const GENERATIVE_API_URL = process.env.GENERATIVE_API_URL || 'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent';
+
 for (let i = 0; i < argv.length; i++) {
   if (argv[i] === '--count' && argv[i + 1]) { count = Number(argv[i + 1]); }
   if (argv[i] === '--theme' && argv[i + 1]) { theme = argv[i + 1]; }
@@ -28,7 +30,8 @@ async function generate() {
       const resp = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ theme, count })
+        body: JSON.stringify({ theme, count }),
+        signal: AbortSignal.timeout(10_000),
       });
 
       if (resp.ok) {
@@ -51,17 +54,18 @@ async function generate() {
 
       const prompt = `Gere ${count} perguntas de múltipla escolha em português sobre o tema "${theme || 'variado'}". Responda APENAS com um array JSON. Cada item deve ter: id (inteiro), theme (string), question (string), choices (array de exatas 4 strings), answerIndex (inteiro começando em 0), e explanation (string). Exemplo:\n[ { "id": 1, "theme": "${theme || 'variado'}", "question": "Pergunta?", "choices": ["A","B","C","D"], "answerIndex": 0, "explanation": "Motivo da resposta" } ]\nSem texto adicional, formatação markdown ou crases, apenas o JSON puro.`;
 
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+      const url = `${GENERATIVE_API_URL}?key=${apiKey}`;
 
       const body = {
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7 } // Removido o responseMimeType
+        generationConfig: { temperature: 0.7 }
       };
 
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(10_000),
       });
 
       if (!res.ok) throw new Error(`Erro API ${res.status}: ${await res.text()}`);
