@@ -63,8 +63,7 @@ async function generate() {
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
           temperature: 0.7,
-          maxOutputTokens: 2000,
-          thinkingConfig: { thinkingBudget: 0 },
+          maxOutputTokens: 2000
         },
       };
 
