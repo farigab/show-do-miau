@@ -20,7 +20,9 @@ self.addEventListener('install', (event) => {
   if (!IS_VERSIONED) return; // legacy SW — just skip waiting, don't cache
 
   const precacheUrls = WB_PRECACHE.map(e => (typeof e === 'string' ? e : e.url));
-  const allAssets = [...new Set([...ASSETS, ...precacheUrls])];
+  // Normalize to absolute URLs and dedupe to avoid Cache.addAll duplicate requests
+  const normalized = [...ASSETS, ...precacheUrls].map(u => new URL(u, self.location).href);
+  const allAssets = Array.from(new Set(normalized));
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(allAssets))
   );
