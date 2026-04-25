@@ -15,6 +15,20 @@ const safeStorage = {
   remove: (k) => { try { localStorage.removeItem(k); } catch { } },
 };
 
+// Remove cache-bust `_sw` query param from the URL without reloading.
+// This lets the app use `_sw` to force a reload but keeps the visible URL clean.
+try {
+  (function stripSwParam() {
+    const u = new URL(location.href);
+    if (!u.searchParams.has('_sw')) return;
+    u.searchParams.delete('_sw');
+    const clean = u.pathname + (u.search ? u.search : '') + (u.hash ? u.hash : '');
+    history.replaceState(null, '', clean);
+  })();
+} catch (e) {
+  // ignore failures in very old environments
+}
+
 const intro = document.getElementById('intro');
 const questionScreen = document.getElementById('questionScreen');
 const finalScreen = document.getElementById('finalScreen');
