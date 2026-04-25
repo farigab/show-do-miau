@@ -1,7 +1,7 @@
 // Workbox injects the versioned precache manifest here at build time.
-const WB_PRECACHE = globalThis.__WB_MANIFEST || [];
+const WB_PRECACHE = self.__WB_MANIFEST || [];
 
-const IS_VERSIONED = (typeof __IS_VERSIONED__ === 'undefined') ? /service-worker\.\d+\.js/.test(globalThis.location.href) : __IS_VERSIONED__;
+const IS_VERSIONED = (typeof __IS_VERSIONED__ !== 'undefined') ? __IS_VERSIONED__ : /service-worker\.\d+\.js/.test(self.location.href);
 const BUILD_ID = '__BUILD_ID__';
 const CACHE_NAME = `showdo-miau-${BUILD_ID}`;
 
@@ -15,25 +15,25 @@ const ASSETS = [
   '/icons/icon-512.svg'
 ];
 
-globalThis.addEventListener('install', (event) => {
-  globalThis.skipWaiting();
+self.addEventListener('install', (event) => {
+  self.skipWaiting();
   if (!IS_VERSIONED) return; // legacy SW — just skip waiting, don't cache
 
   const precacheUrls = WB_PRECACHE.map(e => (typeof e === 'string' ? e : e.url));
   // Normalize to absolute URLs and dedupe to avoid Cache.addAll duplicate requests
-  const normalized = [...ASSETS, ...precacheUrls].map(u => new URL(u, globalThis.location).href);
+  const normalized = [...ASSETS, ...precacheUrls].map(u => new URL(u, self.location).href);
   const allAssets = Array.from(new Set(normalized));
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(allAssets))
   );
 });
 
-globalThis.addEventListener('activate', (event) => {
+self.addEventListener('activate', (event) => {
   if (!IS_VERSIONED) {
     // SELF-DESTRUCT: unregister legacy SW and tell clients to reload
     event.waitUntil(
-      globalThis.registration.unregister()
-        .then(() => globalThis.clients.matchAll({ includeUncontrolled: true }))
+      self.registration.unregister()
+        .then(() => self.clients.matchAll({ includeUncontrolled: true }))
         .then(clients => clients.forEach(c => {
           try { c.postMessage({ type: 'SW_UNREGISTERED' }); } catch (e) { }
         }))
@@ -43,19 +43,19 @@ globalThis.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
       .then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
-      .then(() => globalThis.clients.claim())
-      .then(() => globalThis.clients.matchAll({ includeUncontrolled: true }))
+      .then(() => self.clients.claim())
+      .then(() => self.clients.matchAll({ includeUncontrolled: true }))
       .then(clients => clients.forEach(c => {
         try { c.postMessage({ type: 'SW_UPDATED' }); } catch (e) { }
       }))
   );
 });
 
-globalThis.addEventListener('message', (event) => {
-  if (event.data?.type === 'SKIP_WAITING') globalThis.skipWaiting();
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
-globalThis.addEventListener('fetch', (event) => {
+self.addEventListener('fetch', (event) => {
   if (!IS_VERSIONED) return; // legacy SW — don't intercept any requests
 
   const url = new URL(event.request.url);
