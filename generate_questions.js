@@ -83,7 +83,7 @@ async function generate() {
       const parsed = geminiUtils.extractJSONFromText(text);
       if (!parsed) throw new Error('Não foi possível extrair JSON da resposta da API.');
 
-      const normalized = geminiUtils.normalizeQuestions(parsed, theme || 'Misturado');
+      const normalized = geminiUtils.normalizeQuestions(parsed, theme || 'Diversos');
       fs.writeFileSync('questions.json', JSON.stringify(normalized, null, 2), 'utf8');
       console.log('✅ questions.json criado via API do Gemini!');
       return;
@@ -97,7 +97,7 @@ async function generate() {
   for (let i = 0; i < count; i++) {
     const item = SAMPLE_POOL[i % SAMPLE_POOL.length];
     out.push({
-      id: i + 1, theme: theme || 'Misturado', question: item.question, choices: item.choices, answerIndex: item.answerIndex, explanation: item.explanation
+      id: i + 1, theme: theme || 'Diversos', question: item.question, choices: item.choices, answerIndex: item.answerIndex, explanation: item.explanation
     });
   }
   fs.writeFileSync('questions.json', JSON.stringify(out, null, 2), 'utf8');

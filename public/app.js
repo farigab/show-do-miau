@@ -227,7 +227,7 @@ async function startGame(theme) {
   }
 
   let pool = questions;
-  if (theme && theme !== 'Misturado') {
+  if (theme && theme !== 'Diversos') {
     pool = questions.filter(q => String(q.theme || '').toLowerCase() === String(theme).toLowerCase());
   }
 
