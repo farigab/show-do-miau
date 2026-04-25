@@ -52,7 +52,11 @@ async function generate() {
     try {
       console.log('A tentar gerar via API direta do Gemini...');
 
-      const prompt = `Gere ${count} perguntas de múltipla escolha em português sobre o tema "${theme || 'variado'}". Responda APENAS com um array JSON. Cada item deve ter: id (inteiro), theme (string), question (string), choices (array de exatas 4 strings), answerIndex (inteiro começando em 0), e explanation (string). Exemplo:\n[ { "id": 1, "theme": "${theme || 'variado'}", "question": "Pergunta?", "choices": ["A","B","C","D"], "answerIndex": 0, "explanation": "Motivo da resposta" } ]\nSem texto adicional, formatação markdown ou crases, apenas o JSON puro.`;
+      const prompt = `Gere ${count} perguntas de múltipla escolha em português sobre o tema "${theme || 'variado'}"
+        As perguntas devem ter níveis de dificuldade variados (fácil, médio e difícil), distribuídos de forma equilibrada.
+        Responda APENAS com um array JSON. Cada item deve ter: id (inteiro), theme (string), question (string), choices (array de exatas 4 strings),
+        answerIndex (inteiro começando em 0), e explanation (string). Exemplo:\n[ { "id": 1, "theme": "${theme || 'variado'}",
+        "question": "Pergunta?", "choices": ["A","B","C","D"], "answerIndex": 0, "explanation": "Motivo da resposta" } ] Sem texto adicional, formatação markdown ou crases, apenas o JSON puro.`;
 
       const geminiUtils = require('./lib/gemini-utils.cjs');
 
