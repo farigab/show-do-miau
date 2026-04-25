@@ -25,15 +25,15 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-html,
-body {
+html, body {
   height: 100%;
   width: 100%;
 }
 
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: var(--bg-color);
+  /* Fundo melhorado com gradiente sutil */
+  background: linear-gradient(135deg, #f3f4f6 0%, #e2e8f0 100%);
   color: var(--text-main);
   -webkit-font-smoothing: antialiased;
   display: flex;
@@ -95,7 +95,6 @@ header h1 {
   box-shadow: var(--shadow-sm);
 }
 
-/* Small quit button shown on the right of the theme tag */
 .theme-container .quit-btn {
   width: auto;
   padding: 6px 10px;
@@ -120,7 +119,9 @@ header h1 {
   background: var(--card-bg);
   padding: 24px 20px;
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
+  /* Sombra mais suave e borda branca para efeito "Premium" */
+  box-shadow: 0 20px 40px -8px rgba(17, 24, 39, 0.1), 0 4px 10px -2px rgba(17, 24, 39, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.8);
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -147,12 +148,70 @@ header h1 {
   position: relative;
 }
 
+/* --- Custom Theme Area Melhorada --- */
+.custom-theme {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px dashed #cbd5e1;
+}
+
+.custom-theme-input {
+  flex: 1;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: #fff;
+  font-size: 1rem;
+  color: var(--text-main);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.15s, border-color 0.15s, transform 0.06s;
+}
+
+.custom-theme-input::placeholder {
+  color: var(--text-muted);
+}
+
+.custom-theme-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 6px 18px rgba(79,70,229,0.12);
+  transform: translateY(-1px);
+}
+
+#customThemeBtn {
+  padding: 14px 20px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(79,70,229,0.18);
+  transition: transform 0.12s ease, box-shadow 0.12s;
+}
+
+#customThemeBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(79,70,229,0.2);
+}
+
+#customThemeBtn:active {
+  transform: translateY(0);
+}
+
+/* --- Theme Cards Melhorados --- */
 .theme-card {
   appearance: none;
-  background: #f9fafb;
-  border: 2px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: 18px 12px;
+  background: #ffffff;
+  border: 1.5px solid var(--border-color);
+  border-radius: 14px;
+  padding: 16px 12px;
   font-size: 0.95rem;
   font-weight: 600;
   color: var(--text-main);
@@ -162,74 +221,75 @@ header h1 {
   align-items: center;
   justify-content: center;
   text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
 .theme-card:active {
   transform: scale(0.96);
 }
 
-.theme-card.selected {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
-  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
+.theme-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 16px rgba(79, 70, 229, 0.08);
+  border-color: var(--accent-light);
+  background: #fefeff;
 }
 
-/*
- * .random-dice — merged from two separate blocks (was duplicated in original).
- * Combines grid placement, layout styles, and animation trigger.
- */
+.theme-card.selected {
+  background: linear-gradient(135deg, var(--accent), #6366f1);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 8px 20px rgba(79,70,229,0.3);
+}
+
+/* --- Botão Random Dice Circular --- */
 .random-dice {
   grid-column: 1 / -1;
   justify-self: center;
   margin-top: 10px;
   margin-bottom: 0;
-  background: #fffbe7;
-  border: 2px solid var(--accent);
-  padding: 10px;
-  border-radius: 16px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed var(--accent);
+  background: var(--accent-light);
+  color: var(--accent);
   box-shadow: 0 2px 8px rgba(79, 70, 229, 0.08);
-  transition: box-shadow 0.2s, transform 0.2s;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.random-dice:hover {
+  background: var(--accent);
+  color: white;
+  border-style: solid;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.2);
 }
 
 .random-dice:active {
   transform: scale(0.95);
 }
 
-.random-dice .dice-svg {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .random-dice.rolling .dice-svg {
   animation: dice-roll 0.7s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+@media (min-width: 720px) {
+  .theme-cards { grid-template-columns: repeat(3, 1fr); gap: 14px; }
+}
+
 @keyframes dice-roll {
-  0% {
-    transform: rotate(0deg) scale(1);
-  }
-
-  20% {
-    transform: rotate(90deg) scale(1.1);
-  }
-
-  40% {
-    transform: rotate(180deg) scale(0.95);
-  }
-
-  60% {
-    transform: rotate(270deg) scale(1.1);
-  }
-
-  80% {
-    transform: rotate(360deg) scale(1);
-  }
-
-  100% {
-    transform: rotate(360deg) scale(1);
-  }
+  0%   { transform: rotate(0deg) scale(1); }
+  20%  { transform: rotate(90deg) scale(1.1); }
+  40%  { transform: rotate(180deg) scale(0.95); }
+  60%  { transform: rotate(270deg) scale(1.1); }
+  80%  { transform: rotate(360deg) scale(1); }
+  100% { transform: rotate(360deg) scale(1); }
 }
 
 .setting-hint {
@@ -328,7 +388,6 @@ header h1 {
   line-height: 1.4;
 }
 
-/* Answer states */
 .btn.choice.correct {
   background: var(--success-bg);
   border-color: var(--success);
@@ -424,7 +483,6 @@ header h1 {
   font-size: 1.4rem;
 }
 
-/* Animated SVG hourglass shown while generating questions */
 .hourglass {
   display: inline-block;
   margin-left: 6px;
@@ -473,73 +531,27 @@ header h1 {
 }
 
 @keyframes sandTop {
-  0% {
-    transform: scaleY(1);
-    opacity: 1;
-  }
-
-  45% {
-    transform: scaleY(0);
-    opacity: 0.65;
-  }
-
-  55% {
-    transform: scaleY(0);
-    opacity: 0.65;
-  }
-
-  100% {
-    transform: scaleY(1);
-    opacity: 1;
-  }
+  0% { transform: scaleY(1); opacity: 1; }
+  45% { transform: scaleY(0); opacity: 0.65; }
+  55% { transform: scaleY(0); opacity: 0.65; }
+  100% { transform: scaleY(1); opacity: 1; }
 }
 
 @keyframes sandBottom {
-  0% {
-    transform: scaleY(0);
-    opacity: 0.4;
-  }
-
-  45% {
-    transform: scaleY(1);
-    opacity: 1;
-  }
-
-  55% {
-    transform: scaleY(1);
-    opacity: 1;
-  }
-
-  100% {
-    transform: scaleY(0);
-    opacity: 0.4;
-  }
+  0% { transform: scaleY(0); opacity: 0.4; }
+  45% { transform: scaleY(1); opacity: 1; }
+  55% { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(0); opacity: 0.4; }
 }
 
 @keyframes sandStream {
-  0% {
-    opacity: 0;
-    transform: scaleY(0.2);
-  }
-
-  25% {
-    opacity: 1;
-    transform: scaleY(1);
-  }
-
-  75% {
-    opacity: 1;
-    transform: scaleY(1);
-  }
-
-  100% {
-    opacity: 0;
-    transform: scaleY(0.2);
-  }
+  0% { opacity: 0; transform: scaleY(0.2); }
+  25% { opacity: 1; transform: scaleY(1); }
+  75% { opacity: 1; transform: scaleY(1); }
+  100% { opacity: 0; transform: scaleY(0.2); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-
   .hourglass .sand-top,
   .hourglass .sand-bottom,
   .hourglass .stream {
@@ -566,89 +578,34 @@ footer {
 
 /* --- Animations --- */
 @keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(15px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes shake {
-
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-
-  25% {
-    transform: translateX(-4px);
-  }
-
-  75% {
-    transform: translateX(4px);
-  }
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
 }
 
 /* --- Responsive --- */
 @media (min-width: 600px) {
-  .app {
-    padding: 40px 16px;
-  }
-
-  .screen {
-    padding: 32px 40px;
-  }
+  .app { padding: 40px 16px; }
+  .screen { padding: 32px 40px; }
 }
 
 @media (max-width: 420px) {
-  .app {
-    padding: 14px 12px;
-  }
-
-  .screen {
-    padding: 18px 14px;
-  }
-
-  header h1 {
-    font-size: 1.2rem;
-  }
-
-  .theme-cards {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-
-  .theme-card {
-    padding: 14px 12px;
-    font-size: 1rem;
-  }
-
-  .question {
-    font-size: 1.15rem;
-  }
-
-  .btn {
-    padding: 14px;
-    font-size: 1rem;
-  }
-
-  .choices {
-    gap: 10px;
-  }
-
-  .choice-label {
-    width: 36px;
-    height: 36px;
-    margin-right: 10px;
-  }
+  .app { padding: 14px 12px; }
+  .screen { padding: 18px 14px; }
+  header h1 { font-size: 1.2rem; }
+  .theme-cards { grid-template-columns: 1fr; gap: 10px; }
+  .theme-card { padding: 14px 12px; font-size: 1rem; }
+  .question { font-size: 1.15rem; }
+  .btn { padding: 14px; font-size: 1rem; }
+  .choices { gap: 10px; }
+  .choice-label { width: 36px; height: 36px; margin-right: 10px; }
 }
 
 @media (min-width: 420px) and (max-width: 599px) {
-  .theme-cards {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  .theme-cards { grid-template-columns: repeat(2, 1fr); }
 }

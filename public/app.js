@@ -32,6 +32,9 @@ const quitBtn = document.getElementById('quitBtn');
 const themeCards = Array.from(document.querySelectorAll('.theme-card'));
 const diceBtn = document.getElementById('random-dice');
 const themeTagEl = document.getElementById('themeTag');
+const customThemeInput = document.getElementById('customThemeInput');
+const customThemeBtn = document.getElementById('customThemeBtn');
+const THEME_STORAGE_KEY = 'showdo_miau_theme';
 
 let questions = [];
 let selected = [];
@@ -71,6 +74,7 @@ themeCards.forEach(card => {
     const theme = card.dataset.theme;
     themeCards.forEach(c => c.classList.remove('selected'));
     card.classList.add('selected');
+    safeStorage.set(THEME_STORAGE_KEY, theme);
     startGame(theme);
   });
 });
@@ -101,10 +105,38 @@ if (diceBtn) {
       if (chosen) {
         themeCards.forEach(c => c.classList.remove('selected'));
         chosen.classList.add('selected');
+        safeStorage.set(THEME_STORAGE_KEY, chosen.dataset.theme);
         startGame(chosen.dataset.theme);
       }
     }, 700); // tempo igual à animação CSS
   });
+}
+
+// Custom theme input/button
+if (customThemeBtn && customThemeInput) {
+  customThemeBtn.addEventListener('click', () => {
+    const val = (customThemeInput.value || '').trim();
+    if (!val) return;
+    themeCards.forEach(c => c.classList.remove('selected'));
+    safeStorage.set(THEME_STORAGE_KEY, val);
+    startGame(val);
+  });
+
+  customThemeInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') customThemeBtn.click();
+  });
+}
+
+// Restore previously selected theme (if any)
+try {
+  const stored = safeStorage.get(THEME_STORAGE_KEY);
+  if (stored) {
+    const matched = themeCards.find(c => c.dataset.theme && String(c.dataset.theme).toLowerCase() === String(stored).toLowerCase());
+    if (matched) matched.classList.add('selected');
+    else if (customThemeInput) customThemeInput.value = stored;
+  }
+} catch (e) {
+  // ignore storage errors
 }
 
 async function startGame(theme) {
