@@ -3,26 +3,21 @@ const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const { GoogleAuth } = require('google-auth-library');
 require('dotenv').config();
-const path = require('node:path');
-const fs = require('node:fs');
 const geminiUtils = require('./lib/gemini-utils.cjs');
 
 const app = express();
-const IS_PROD = process.env.NODE_ENV === 'production';
 
-// ── Trust Proxy ───────────────────────────────────────────────────────────────
-// [FIX #8] Sem isso, req.ip é sempre o IP do proxy (nginx/Cloudflare),
-// tornando o rate limit global em vez de por utilizador.
+// Trust proxy so rate-limiting is per-client when behind a reverse proxy
 app.set('trust proxy', 1);
 
-// ── CORS ──────────────────────────────────────────────────────────────────────
+// CORS: set FRONTEND_ORIGIN in production to restrict origins
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || '*';
 app.use(cors({
   origin: FRONTEND_ORIGIN,
   methods: ['GET', 'POST', 'OPTIONS'],
 }));
 
-// ── Rate Limiting ─────────────────────────────────────────────────────────────
+// Rate limiting for /api/* endpoints
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 20,
@@ -32,32 +27,7 @@ const apiLimiter = rateLimit({
 });
 app.use('/api/', apiLimiter);
 
-// ── Content-Security-Policy ───────────────────────────────────────────────────
-// [FIX #4] localhost removido em produção — só presente quando NODE_ENV != production.
-const devConnect = IS_PROD ? '' : ' http://localhost:3000';
-const connectSrc = `connect-src 'self'${devConnect} https://generativelanguage.googleapis.com https://fonts.googleapis.com https://fonts.gstatic.com`;
-const fontSrc = "font-src 'self' https://fonts.gstatic.com";
-// Keep a consistent, stricter style-src in dev and prod to avoid masking
-// inline-style regressions. Use a nonce in the future if inline styles are
-// required during development.
-const styleSrc = "style-src 'self' https://fonts.googleapis.com";
-const CSP = [
-  "default-src 'self'",
-  connectSrc,
-  fontSrc,
-  styleSrc,
-  "img-src 'self' data:",
-  "script-src 'self'",
-  "object-src 'none'",
-  "base-uri 'self'",
-].join('; ');
-
-app.use((_req, res, next) => {
-  res.setHeader('Content-Security-Policy', CSP);
-  next();
-});
-
-// Additional security headers
+// Minimal security headers
 app.use((_req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
@@ -66,92 +36,14 @@ app.use((_req, res, next) => {
   next();
 });
 
-// ── Cache-Control para Service Worker e config ───────────────────────────────
-app.use((req, res, next) => {
-  // Ensure any per-build service worker file (service-worker.<id>.js)
-  // or the legacy service-worker.js is served with no-cache headers.
-  if (req.path === '/service-worker.js' || req.path.startsWith('/service-worker.')) {
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-  }
-
-  // sw-boot should always be freshly fetched so it can detect deploys.
-  if (req.path === '/sw-boot.js') {
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-  }
-
-  // Prevent generated config from being cached by browsers/CDNs so clients
-  // can always fetch the latest buildId/serviceWorkerFile.
-  if (req.path === '/config.js' || req.path === '/config.json') {
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-  }
-
-  next();
-});
-
-// ── Bloqueio de arquivos sensíveis ────────────────────────────────────────────
-const BLOCKED_BASENAMES = new Set([
-  'server.js', 'worker.js', 'wrangler.toml', 'wrangler.json',
-  'package.json', 'package-lock.json', '.env', '.env.example',
-  'generate_questions.js',
-]);
-
-const ALLOWED_EXT = /\.(html|css|js|json|webmanifest|png|svg|ico|webp|jpg|jpeg|woff2?|ttf|eot)$/i;
-
-app.use((req, res, next) => {
-  const basename = path.basename(req.path);
-  const ext = path.extname(req.path);
-
-  if (BLOCKED_BASENAMES.has(basename)) {
-    return res.status(403).json({ error: 'Forbidden' });
-  }
-
-  if (/^\/(scripts|node_modules|\.git)(\/|$)/.test(req.path)) {
-    return res.status(403).json({ error: 'Forbidden' });
-  }
-
-  if (ext && !ALLOWED_EXT.test(ext)) {
-    return res.status(403).json({ error: 'Forbidden' });
-  }
-
-  next();
-});
-
-// Fallback: quando um pedido ao service-worker versionado (service-worker.<id>.js)
-// chegar e o ficheiro não existir no disco (por exemplo build não incluiu o
-// ficheiro versionado), devolvemos o `service-worker.js` não-versionado.
-// Isso evita que clientes fiquem presos a um `serviceWorkerFile` apontando
-// para um ficheiro inexistente e facilita correção imediata em produção.
-app.get(/^\/service-worker\..*\.js$/, (req, res, next) => {
-  try {
-    const requested = req.path.replace(/^\//, '');
-    const fileOnDisk = path.join(__dirname, 'public', requested);
-    if (fs.existsSync(fileOnDisk)) return next();
-  } catch (err) {
-    // se houver erro a verificar o ficheiro, deixa passar para o static (retorna 404)
-    return next();
-  }
-
-  return res.sendFile(path.join(__dirname, 'public', 'service-worker.js'));
-});
-
-app.use(express.static(path.join(__dirname, 'public')));
-
-// SPA fallback
-app.get(/^\/(?!api).*/, (req, res) => {
-  if (path.extname(req.path)) return res.status(404).send('Not found');
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// ── Configuração ──────────────────────────────────────────────────────────────
+// Configuration
 const PORT = process.env.PORT || 3000;
-
 const GENERATIVE_API_URL =
   process.env.GENERATIVE_API_URL ||
   'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent';
-
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
-// ── Cliente da Generative API ─────────────────────────────────────────────────
+// Client for the Generative API
 async function callGenerativeAPI(prompt) {
   const headers = { 'Content-Type': 'application/json' };
 
@@ -188,12 +80,7 @@ async function callGenerativeAPI(prompt) {
   return res.json();
 }
 
-// ── Utilitários de parse ──────────────────────────────────────────────────────
-// Moved to ./lib/gemini-utils.cjs and required at the top of this file.
-
-// ── Rota de geração ───────────────────────────────────────────────────────────
-// [FIX #17] express.json() aplicado por rota, não globalmente.
-// Reduz superfície de parsing desnecessário em rotas estáticas.
+// Route: generation
 app.post('/api/generate-questions', express.json({ limit: '16kb' }), async (req, res) => {
   const rawTheme = req.body?.theme;
   const rawCount = req.body?.count;
@@ -225,16 +112,7 @@ app.post('/api/generate-questions', express.json({ limit: '16kb' }), async (req,
       });
     }
 
-    const normalized = parsed.map((it, idx) => {
-      const id = it.id ?? (idx + 1);
-      const th = it.theme ?? theme;
-      const question = it.question ?? '';
-      const choices = Array.isArray(it.choices) ? it.choices : [];
-      const idxNum = Number(it.answerIndex ?? 0);
-      const answerIndex = (idxNum >= 0 && idxNum < choices.length) ? idxNum : 0;
-      const explanation = it.explanation ?? null;
-      return { id, theme: th, question, choices, answerIndex, explanation };
-    });
+    const normalized = geminiUtils.normalizeQuestions(parsed, theme);
 
     return res.json({ ok: true, questions: normalized });
 
@@ -244,7 +122,7 @@ app.post('/api/generate-questions', express.json({ limit: '16kb' }), async (req,
   }
 });
 
-// ── Start ─────────────────────────────────────────────────────────────────────
+// Start
 app.listen(PORT, () =>
   console.log(`Servidor proxy generativo a correr em http://localhost:${PORT}`),
 );

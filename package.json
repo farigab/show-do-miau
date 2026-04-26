@@ -3,16 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "prestart": "node scripts/build-sw.js",
-    "prestart:server": "node scripts/build-sw.js",
-    "start": "dotenv -e .env -- npx http-server -c-1 . -p 8080",
-    "build:sw": "node scripts/build-sw.js",
-    "build": "npm run build:sw",
-    "build:pages": "npm run generate-config && npm run build",
-    "generate": "node generate_questions.js --count 10",
-    "generate-config": "node scripts/generate-config.js",
-    "start:server": "node server.js",
-    "dev:server": "nodemon server.js"
+    "start": "node server.js",
+    "dev:server": "nodemon server.js",
+    "deploy:worker": "wrangler publish --name show-do-miau-worker"
   },
   "dependencies": {
     "cors": "^2.8.5",
